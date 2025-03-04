@@ -1,3 +1,5 @@
+![Challenge-Architecture](https://github.com/user-attachments/assets/242ffdb2-c977-4625-9b79-d588b0e4b140)
+
 # Day 1 : Streamlined Guide: Using Claude as AI Assistant to Terraform
 ## Step 1: Use Claude to Generate Terraform Code
 - Start a conversation with Claude.
