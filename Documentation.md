@@ -171,23 +171,69 @@
   - ![Image21](https://github.com/user-attachments/assets/5e39c74d-17d4-4975-90f2-d4bbe2cead74)
  
   
-# Step 6: Verify S3 Bucket Creation
+## Step 6: Verify S3 Bucket Creation
 - Use AWS CLI to list buckets:
 
       aws s3 ls
 
- - ![SImage22](https://github.com/user-attachments/assets/8893a423-e2fe-4833-9afa-f5ca6e77922f)
+- Verify that your new bucket is in the list.
+
+ - ![Image22](https://github.com/user-attachments/assets/8893a423-e2fe-4833-9afa-f5ca6e77922f)
+
+## Step 7: Create the Cloud DynamoDB tables
+
+Remove the S3 lines and add the lines below to create the DynamoDB tables used by CloudMart
+
+          provider "aws" {
+            region = "us-east-1"  
+          }
+          
+          # Tables DynamoDB
+          resource "aws_dynamodb_table" "cloudmart_products" {
+            name           = "cloudmart-products"
+            billing_mode   = "PAY_PER_REQUEST"
+            hash_key       = "id"
+          
+            attribute {
+              name = "id"
+              type = "S"
+            }
+          }
+          
+          resource "aws_dynamodb_table" "cloudmart_orders" {
+            name           = "cloudmart-orders"
+            billing_mode   = "PAY_PER_REQUEST"
+            hash_key       = "id"
+          
+            attribute {
+              name = "id"
+              type = "S"
+            }
+          }
+          
+          resource "aws_dynamodb_table" "cloudmart_tickets" {
+            name           = "cloudmart-tickets"
+            billing_mode   = "PAY_PER_REQUEST"
+            hash_key       = "id"
+          
+            attribute {
+              name = "id"
+              type = "S"
+            }
+          }
 
 
 
 
+- Apply the configuration:
 
+      terraform apply
 
+- Type "yes" when prompted to create the resources.
 
+- ![Image23](https://github.com/user-attachments/assets/a4eb5397-4676-4d75-911c-c3df3136833d)
 
-
-
-
+Congratulations! You've successfully used Claude to generate Terraform code, set up an EC2 workstation, installed Terraform, and created an S3 bucket. This completes Day 1 of the MultiCloud DevOps & AI Challenge.
 
 
 
