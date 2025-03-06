@@ -336,10 +336,24 @@ Repository name: cloudmart-frontend
 
   We can now access our application on port 5000 of the frontend  loadbancer 
 
+- ![Image24](https://github.com/user-attachments/assets/adc595eb-0b3a-435e-9a4f-4eec19747976)
+- ![Image25](https://github.com/user-attachments/assets/ca52fa4c-c70d-48ce-a718-751f83f26212)
+- ![Image26](https://github.com/user-attachments/assets/2e86cfa2-89f0-4549-afbf-f70423e9887e)
+- ![Image27](https://github.com/user-attachments/assets/81465726-a10d-43b9-a07e-ec6664e3b452)
 
 
 
+### Removal
+At the end of the hands-on, delete all resources:
+If you delete the cluster at the end of the exercise, you'll have to recreate it for the next days. So decide what makes more sense for you: delete the cluster and recreate it every day or keep it and pay for the time it's running. However, don't forget to delete it permanently at the end of the Challenge.
 
+
+            kubectl delete service cloudmart-frontend-app-service
+            kubectl delete deployment cloudmart-frontend-app
+            kubectl delete service cloudmart-backend-app-service
+            kubectl delete deployment cloudmart-backend-app
+            
+            eksctl delete cluster --name cloudmart --region us-east-1
 
 
 
