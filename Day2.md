@@ -100,25 +100,82 @@ This is a Multi-stage Docker file to reduces the final image size by using inter
 
 - ![Image5](https://github.com/user-attachments/assets/c3e7609f-6559-4077-a05a-ea2b4e94f02a)
 
+## Part 2 - Kubernetes
+
+Kubernetes efficiently manages containerized applications, and using a multistage Dockerfile helps optimize deployment by reducing image size and improving security. **Attention:** AWS Kubernetes service (EKS) is not free, so you will incur charges while executing the hands-on tasks—remember to delete the cluster afterward using the removal section to avoid unnecessary costs.
+
+## Cluster Setup on AWS Elastic Kubernetes Services (EKS)
+
+- Create a user named `eksuser` with Admin privileges and authenticate with it
+
+        aws configure
+
+            [ec2-user@ip-172-31-87-172 frontend]$ aws configure
+            AWS Access Key ID [None]: <Your-Key-ID>
+            AWS Secret Access Key [None]: <Your-Access-Key>
+            Default region name [None]: us-east-1
+            Default output format [None]: json
+
+
+- Install the CLI tool eksctl
+
+        curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+        sudo cp /tmp/eksctl /usr/bin
+        eksctl version
+
+- ![Image6](https://github.com/user-attachments/assets/216f5542-6207-4045-8a48-c0c8b00d2af9)
+
+
+- Install the CLI tool kubectl
+
+      curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
+      chmod +x ./kubectl
+      mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+      echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+      kubectl version --short --client
+
+
+- ![Image7](https://github.com/user-attachments/assets/0a08c531-3b46-45fd-8faa-0e53056826be)
+
+
+- Create an EKS Cluster
+
+                    eksctl create cluster \
+                          --name cloudmart \
+                          --region us-east-1 \
+                          --nodegroup-name standard-workers \
+                          --node-type t3.medium \
+                          --nodes 1 \
+                          --with-oidc \
+                          --managed
+
+
+- ![Image8](https://github.com/user-attachments/assets/05e6399f-6443-4afb-9381-9c04fcfba178)
+- ![Image9](https://github.com/user-attachments/assets/e62394f9-262f-4350-b8c6-198624ab00b7)
 
 
 
+- Connect to the EKS cluster using the kubectl configuration
+
+              aws eks update-kubeconfig --name cloudmart
 
 
+- Verify Cluster Connectivity
+
+              kubectl get svc
+              kubectl get nodes
 
 
+- Create a Role & Service Account to provide pods access to services used by the application (DynamoDB, Bedrock, etc).
 
 
-
-
-
-
-
-
-
-
-
-
+            eksctl create iamserviceaccount \
+              --cluster=cloudmart \
+              --name=cloudmart-pod-execution-role \
+              --role-name CloudMartPodExecutionRole \
+              --attach-policy-arn=arn:aws:iam::aws:policy/AdministratorAccess\
+              --region us-east-1 \
+              --approve
 
 
 
