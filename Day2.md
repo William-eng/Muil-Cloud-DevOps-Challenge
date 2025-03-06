@@ -178,37 +178,163 @@ Kubernetes efficiently manages containerized applications, and using a multistag
               --approve
 
 
+- ![Image10](https://github.com/user-attachments/assets/ca6d7ce0-4316-4ca3-8eab-a128942f00a0)
+
+**NOTE**: In the example above, Admin privileges were used to facilitate educational purposes. Always remember to follow the principle of least privilege in production environments
+
+## Backend Deployment on Kubernetes
+
+### **Create an ECR Repository for the Backend and upload the Docker image to it**
+
+- ![Image11](https://github.com/user-attachments/assets/30e159ef-fde2-4b5f-ae93-ae1d6081c019)
+- ![Image12](https://github.com/user-attachments/assets/d08742c9-9f4d-41b4-8500-ac86e05023dd)
+
+
+
+### Switch to backend folder
+
+            cd ../..
+            cd challenge-day2/backend
+
+
+### Follow the ECR steps to build your Docker image
+
+- ![Image13](https://github.com/user-attachments/assets/b88ba639-bff8-414f-8e83-e9c6fb579777)
+
+
+
+            cd ../..
+            cd challenge-day2/backend
+            nano cloudmart-backend.yaml
+
+- ![Image14](https://github.com/user-attachments/assets/aeba9ee9-fc17-4f43-9652-7164f7b9d4f5)
+
+- ![Image15](https://github.com/user-attachments/assets/f536cb10-1fd3-445d-9032-20b165077c31)
+
+### **Create a Kubernetes deployment file (YAML) for the Backend**
+
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: cloudmart-backend-app
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: cloudmart-backend-app
+              template:
+                metadata:
+                  labels:
+                    app: cloudmart-backend-app
+                spec:
+                  serviceAccountName: cloudmart-pod-execution-role
+                  containers:
+                  - name: cloudmart-backend-app
+                    image: public.ecr.aws/<your-id>/cloudmart-backend:latest
+                    env:
+                    - name: PORT
+                      value: "5000"
+                    - name: AWS_REGION
+                      value: "us-east-1"
+                    - name: BEDROCK_AGENT_ID
+                      value: "xxxxxx"
+                    - name: BEDROCK_AGENT_ALIAS_ID
+                      value: "xxxx"
+                    - name: OPENAI_API_KEY
+                      value: "xxxxxx"
+                    - name: OPENAI_ASSISTANT_ID
+                      value: "xxxx"
+            ---
+            
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: cloudmart-backend-app-service
+            spec:
+              type: LoadBalancer
+              selector:
+                app: cloudmart-backend-app
+              ports:
+                - protocol: TCP
+                  port: 5000
+                  targetPort: 5000
+
+
+### Deploy the Backend on Kubernetes
+
+            kubectl apply -f cloudmart-backend.yaml
+
+Monitor the status of objects being created and obtain the public IP generated for the API
 
 
 
 
+- ![Image16](https://github.com/user-attachments/assets/ddf4157e-6420-4df4-a5c1-1abcb1bceb70)
 
 
+## Frontend Deployment on Kubernetes
+
+### Preparation
+
+Change the Frontend's .env file to point to the API URL created within Kubernetes obtained by the `kubectl get service` command
+
+- ![Image17](https://github.com/user-attachments/assets/114e822e-440b-4256-9aa1-818a3bc44306)
+
+### Create an ECR Repository for the Frontend and upload the Docker image to it
+
+Repository name: cloudmart-frontend
+
+- ![Image18](https://github.com/user-attachments/assets/b0553c0a-c566-46cf-9759-74831660ee25)
+
+### Follow the ECR steps to build your Docker image
+
+- ![Image19](https://github.com/user-attachments/assets/f813d8ec-7e18-4427-9b96-2e73dbfdacbe)
+- ![Image20](https://github.com/user-attachments/assets/2f4622b1-03da-45bc-bc57-ea3a545f0139)
 
 
+### **Create a Kubernetes deployment file (YAML) for the Frontend**
 
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: cloudmart-frontend-app
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: cloudmart-frontend-app
+              template:
+                metadata:
+                  labels:
+                    app: cloudmart-frontend-app
+                spec:
+                  serviceAccountName: cloudmart-pod-execution-role
+                  containers:
+                  - name: cloudmart-frontend-app
+                    image: public.ecr.aws/l4c0j8h9/cloudmart-frontend:latest
+            ---
+            
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: cloudmart-frontend-app-service
+            spec:
+              type: LoadBalancer
+              selector:
+                app: cloudmart-frontend-app
+              ports:
+                - protocol: TCP
+                  port: 5001
+                  targetPort: 5001
 
+- ![Image21](https://github.com/user-attachments/assets/1f7ecdd6-7be6-4576-b7ad-0a508d8863c9)
 
+  Now Let check the Loadbalancer on the AWS Page and access our application
 
+  - ![Image22](https://github.com/user-attachments/assets/c87522fe-b4a2-4267-bba2-54ade0f3501d)
+- ![Image23](https://github.com/user-attachments/assets/b703caa4-f33c-4e42-a4bc-9e0a928e8fe3)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  We can now access our application on port 5000 of the frontend  loadbancer 
 
 
 
