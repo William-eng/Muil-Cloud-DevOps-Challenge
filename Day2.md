@@ -46,18 +46,59 @@ Content of .env:
       OPENAI_API_KEY=<your-openai-api-key>
       OPENAI_ASSISTANT_ID=<your-openai-assistant-id>
 
+Create Dockerfile:
+
+      nano Dockerfile
+      
+Content of Dockerfile:
+
+      FROM node:18
+      WORKDIR /usr/src/app
+      COPY package*.json ./
+      RUN npm install
+      COPY . .
+      EXPOSE 5000
+      CMD ["npm", "start"]
+- ![Image3](https://github.com/user-attachments/assets/70792add-07f3-45b2-81fb-8e2e9b4a75d7)
+
+
+### Frontend
+
+Create folder and download source code:
+
+      cd ..
+      mkdir frontend && cd frontend
+      wget https://tcb-public-events.s3.amazonaws.com/mdac/resources/day2/cloudmart-frontend.zip
+      unzip cloudmart-frontend.zip
+
+- ![Image4](https://github.com/user-attachments/assets/b6b43d5e-fddb-4a74-9dfb-594ee657893a)
+
+Create Dockerfile:
+
+      nano Dockerfile
+
+Content of Dockerfile:
+This is a Multi-stage Docker file to reduces the final image size by using intermediate stages to build the application, ensuring only necessary artifacts are included in the final image. This improves security, performance, and deployment efficiency by eliminating unnecessary dependencies and files.
+
+            FROM node:16-alpine as build
+            WORKDIR /app
+            COPY package*.json ./
+            RUN npm ci
+            COPY . .
+            RUN npm run build
+            
+            FROM node:16-alpine
+            WORKDIR /app
+            RUN npm install -g serve
+            COPY --from=build /app/dist /app
+            ENV PORT=5001
+            ENV NODE_ENV=production
+            EXPOSE 5001
+            CMD ["serve", "-s", ".", "-l", "5001"]
 
 
 
-
-
-
-
-
-
-
-
-
+- ![Image5](https://github.com/user-attachments/assets/c3e7609f-6559-4077-a05a-ea2b4e94f02a)
 
 
 
