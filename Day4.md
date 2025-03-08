@@ -1,0 +1,298 @@
+# MultiCloud, DevOps & AI Challenge - Day 4
+# Creating resources using Terraform
+
+Navigate to the folder containing the `main.tf` file and download the zip file containing the Lambda function that will be used by Bedrock
+
+    cd challenge-day2/backend/src/lambda
+    cp list_products.zip ../../../../terraform-project/
+    cd ../../../../terraform-project
+
+Add the following lines at the end of the main.tf file
+
+      # IAM Role for Lambda function
+      resource "aws_iam_role" "lambda_role" {
+        name = "cloudmart_lambda_role"
+      
+        assume_role_policy = jsonencode({
+          Version = "2012-10-17"
+          Statement = [
+            {
+              Action = "sts:AssumeRole"
+              Effect = "Allow"
+              Principal = {
+                Service = "lambda.amazonaws.com"
+              }
+            }
+          ]
+        })
+      }
+      
+      # IAM Policy for Lambda function
+      resource "aws_iam_role_policy" "lambda_policy" {
+        name = "cloudmart_lambda_policy"
+        role = aws_iam_role.lambda_role.id
+      
+        policy = jsonencode({
+          Version = "2012-10-17"
+          Statement = [
+            {
+              Effect = "Allow"
+              Action = [
+                "dynamodb:Scan",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+              ]
+              Resource = [
+                aws_dynamodb_table.cloudmart_products.arn,
+                aws_dynamodb_table.cloudmart_orders.arn,
+                aws_dynamodb_table.cloudmart_tickets.arn,
+                "arn:aws:logs:*:*:*"
+              ]
+            }
+          ]
+        })
+      }
+      
+      # Lambda function for listing products
+      resource "aws_lambda_function" "list_products" {
+        filename         = "list_products.zip"
+        function_name    = "cloudmart-list-products"
+        role             = aws_iam_role.lambda_role.arn
+        handler          = "index.handler"
+        runtime          = "nodejs20.x"
+        source_code_hash = filebase64sha256("list_products.zip")
+      
+        environment {
+          variables = {
+            PRODUCTS_TABLE = aws_dynamodb_table.cloudmart_products.name
+          }
+        }
+      }
+      
+      # Lambda permission for Bedrock
+      resource "aws_lambda_permission" "allow_bedrock" {
+        statement_id  = "AllowBedrockInvoke"
+        action        = "lambda:InvokeFunction"
+        function_name = aws_lambda_function.list_products.function_name
+        principal     = "bedrock.amazonaws.com"
+      }
+      
+      # Output the ARN of the Lambda function
+      output "list_products_function_arn" {
+        value = aws_lambda_function.list_products.arn
+      }
+
+
+- ![Image1](https://github.com/user-attachments/assets/e6a58d34-8a96-49d7-bc90-141fb5049700)
+- ![Image2](https://github.com/user-attachments/assets/b35c25e3-746a-447c-a37f-99afdc306233)
+- ![Image3](https://github.com/user-attachments/assets/51964f15-b61a-4597-865c-7cb9126e8cba)
+- ![Image4](https://github.com/user-attachments/assets/6144fc34-c7ad-433c-9b85-c724d5e19694)
+- ![Image5](https://github.com/user-attachments/assets/a5bff169-28bd-4415-b3d0-d7be4bb7a6c5)
+
+
+# Configuring the Amazon Bedrock Agent
+
+Follow these steps to manually create the Bedrock Agent for CloudMart:
+
+## Model Access:
+
+1. In the Amazon Bedrock console, go to "Model access" in the navigation panel.
+2. Choose "Enable specific models".
+3. Select the Claude 3 Sonnet model.
+4. Wait until the model access status changes to "Access granted".
+
+- ![Image6](https://github.com/user-attachments/assets/9d99f286-9133-4ce9-84f2-c39a7b7d8e08)
+- ![Image7](https://github.com/user-attachments/assets/275aa223-7fc0-4cf5-b783-2433eacefebb)
+- ![Image8](https://github.com/user-attachments/assets/c4323ed0-49d2-489f-b6fc-352761c9af55)
+- ![Image8](https://github.com/user-attachments/assets/a2fe14bb-032c-46bf-97b5-d32550ffa198)
+- ![Image9](https://github.com/user-attachments/assets/4eac6d8a-4b61-4f37-897e-0d432a75f540)
+- ![Image10](https://github.com/user-attachments/assets/90c738a1-d359-481c-98f8-a5ccd23a96b2)
+- ![Image11](https://github.com/user-attachments/assets/23fbdcfb-f46c-447a-bacf-13be5969848c)
+
+
+## Create the Agent:
+
+1. In the Amazon Bedrock console, choose "Agents" under "Builder tools" in the navigation panel.
+2. Click on "Create agent".
+3. Name the agent "cloudmart-product-recommendation-agent".
+4. Select "Claude 3 Sonnet" as the base model.
+5. Paste the agent instructions below in the "Instructions for the Agent" section.
+
+
+                     You are a product recommendations agent for CloudMart, an online e-commerce store. Your role is to assist customers in finding products that best suit their needs. Follow these instructions carefully:
+                  
+                  1. Begin each interaction by retrieving the full list of products from the API. This will inform you of the available products and their details.
+                  
+                  2. Your goal is to help users find suitable products based on their requirements. Ask questions to understand their needs and preferences if they're not clear from the user's initial input.
+                  
+                  3. Use the 'name' parameter to filter products when appropriate. Do not use or mention any other filter parameters that are not part of the API.
+                  
+                  4. Always base your product suggestions solely on the information returned by the API. Never recommend or mention products that are not in the API response.
+                  
+                  5. When suggesting products, provide the name, description, and price as returned by the API. Do not invent or modify any product details.
+                  
+                  6. If the user's request doesn't match any available products, politely inform them that we don't currently have such products and offer alternatives from the available list.
+                  
+                  7. Be conversational and friendly, but focus on helping the user find suitable products efficiently.
+                  
+                  8. Do not mention the API, database, or any technical aspects of how you retrieve the information. Present yourself as a knowledgeable sales assistant.
+                  
+                  9. If you're unsure about a product's availability or details, always check with the API rather than making assumptions.
+                  
+                  10. If the user asks about product features or comparisons, use only the information provided in the product descriptions from the API.
+                  
+                  11. Be prepared to assist with a wide range of product inquiries, as our e-commerce store may carry various types of items.
+                  
+                  12. If a user is looking for a specific type of product, use the 'name' parameter to search for relevant items, but be aware that this may not capture all categories or types of products.
+                  
+                  Remember, your primary goal is to help users find the best products for their needs from what's available in our store. Be helpful, informative, and always base your recommendations on the actual product data provided by the API.
+
+-   ![Image12](https://github.com/user-attachments/assets/0dd2c169-23d3-4d33-967f-047c6195c8fc)
+
+
+
+
+- ![Image13](https://github.com/user-attachments/assets/d1b66389-1727-4068-8e46-f6fb1cc27a7c)
+
+
+
+## Configure the IAM Role:
+
+1. In the Bedrock Agent overview, locate the 'Permissions' section.
+2. Click on the IAM role link. This will take you to the IAM console with the correct role selected.
+3. In the IAM console, choose "Add permissions" and then "Create inline policy".
+4. In the JSON tab, paste the following policy:
+
+
+- ![Image14](https://github.com/user-attachments/assets/9fa94660-ab36-4f92-ab2f-712523346489)
+- ![Image16](https://github.com/user-attachments/assets/09a069b6-459d-48a0-9d54-905a295d94f0)
+
+
+## Configure the Action Group:
+
+1. In the "Action groups" section, create a new group called "Get-Product-Recommendations".
+2. Set the action group type as "Define with API schemas".
+3. Select the Lambda function "cloudmart-list-products" as the action group executor.
+4. In the "Action group schema" section, choose "Define via in-line schema editor".
+5. Paste the OpenAPI schema below into the schema editor.
+
+
+- ![Image17](https://github.com/user-attachments/assets/f1288f37-0d83-40d4-9afb-1bea049bdfe5)
+- ![Image18](https://github.com/user-attachments/assets/b9b548b5-543c-48e0-94d1-b1b363c4f5b5)
+
+
+## Review and Create:
+
+1. Review all agent configurations.
+2. Click on "Prepare agent" to finalize the creation.
+
+## Test the Agent:
+
+1. After creation, use the "Test Agent" panel to have conversations with the chatbot.
+2. Verify if the agent is asking relevant questions about the recipient's gender, occasion, and desired category.
+3. Confirm if the agent is consulting the API and presenting appropriate product recommendations.
+
+   - ![Image18](https://github.com/user-attachments/assets/d7a68be5-a650-4ce9-bd31-0efc9db73c2e)
+  - ![Image19](https://github.com/user-attachments/assets/d1719765-d13d-41a2-9b4e-de678d7b4168)
+
+
+## Create an Alias for the Agent:
+
+1. On the agent details page, go to the "Aliases" section.
+2. Click on "Create alias".
+3. Name the alias "cloudmart-prod".
+4. Select the most recent version of the agent.
+5. Click on "Create alias" to finalize.
+
+Note: Make sure that the Lambda function name in the IAM policy matches the actual name of your function and adjust the region in the ARNs if you're not using us-east-1.
+
+- ![Image20](https://github.com/user-attachments/assets/3add8653-9892-4091-a4e6-6db2be88f786)
+- ![Image21](https://github.com/user-attachments/assets/cbeaeee8-1f0c-4469-ae81-1c1e76573d55)
+
+# OpenAI Assistant Configuration
+
+Follow these steps to create an OpenAI assistant for CloudMart:
+
+## OpenAI Access:
+
+1. Access the OpenAI platform (https://platform.openai.com/).
+2. Log in or create an account if you don't have one yet.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
