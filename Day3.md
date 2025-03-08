@@ -94,24 +94,85 @@
 - ![Image11](https://github.com/user-attachments/assets/c21b5070-66c6-4f0f-a51c-b531b85c6f11)
 - ![Image12](https://github.com/user-attachments/assets/edd23b87-b7e2-4029-acd4-9f40c1af2f51)
 - ![Image13](https://github.com/user-attachments/assets/6c8c6fb4-ba17-46ef-ac09-a9f77d4dfb42)
+- ![Image14](https://github.com/user-attachments/assets/fdbb902e-2b21-4e42-ab64-1eec353616f4)
+
+### Configure AWS CodeBuild for Application Deployment
+
+**Create a Deployment Project:**
+
+- Repeat the process of creating projects in CodeBuild.
+- Give this project a different name (for example, **`cloudmartDeployToProduction`**).
+- Configure the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY for the credentials of the user **`eks-user`** in Cloud Build, so it can authenticate to the Kubernetes cluster.
+
+*Note: in a real-world production environment, it is recommended to use an IAM role for this purpose. In this practical exercise, we are directly using the credentials of the* **`eks-user`** *to facilitate the process, since our focus is on CI/CD and not on user authentication at this moment. The configuration of this process in EKS is more extensive. Refer to the Reference section and check "Enabling IAM principal access to your cluster"*
+
+- For the deployment specification, use the following **`buildspec.yml`**:
+
+
+
+                  version: 0.2
+                
+                phases:
+                  install:
+                    runtime-versions:
+                      docker: 20
+                    commands:
+                      - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/kubectl
+                      - chmod +x ./kubectl
+                      - mv ./kubectl /usr/local/bin
+                      - kubectl version --short --client
+                  post_build:
+                    commands:
+                      - aws eks update-kubeconfig --region us-east-1 --name cloudmart
+                      - kubectl get nodes
+                      - ls
+                      - IMAGE_URI=$(jq -r '.[0].imageUri' imagedefinitions.json)
+                      - echo $IMAGE_URI
+                      - sed -i "s|CONTAINER_IMAGE|$IMAGE_URI|g" cloudmart-frontend.yaml
+                      - kubectl apply -f cloudmart-frontend.yaml
+                
+- ![Image15](https://github.com/user-attachments/assets/3bb8eabe-bd76-4616-a4d1-e6b05d22db89)
+- ![Image16](https://github.com/user-attachments/assets/2ffa6105-06f4-4e55-acaf-aa4df3398d46)
+
+Replace the image URI on line 18 of the cloudmart-frontend.yaml files with CONTAINER_IMAGE.
+Commit and push the changes.
+
+        git add -A
+        git commit -m "replaced image uri with CONTAINER_IMAGE"
+        git push
+
+- ![Image17](https://github.com/user-attachments/assets/08543ca1-a7dc-4a53-b81f-50bded254c17)
+- ![Image18](https://github.com/user-attachments/assets/ed0dc731-85b5-4cb2-90ea-cada4238c070)
+
+
+## **Part 2: Test your CI/CD Pipeline**
+
+1. **Make a Change on GitHub:**
+    - Update the application code in the **`cloudmart-application`** repository.
+    - File `src/components/MainPage/index.jsx` line 93
+    - Commit and push the changes.
+
+
+
+                git add -A
+                git commit -m "changed to Featured Products on CloudMart"
+                git push
+
+2. **Observe the Pipeline Execution:**
+    - Watch how CodePipeline automatically triggers the build.
+    - After the build, the deployment phase should begin.
+  
+    - ![Image18](https://github.com/user-attachments/assets/cad0cb43-d6df-43fe-8670-66e45cd16577)
+   - ![Image19](https://github.com/user-attachments/assets/ea9dbd56-fa1b-47a7-a9e6-1ce8a3b53d6d)
+   - ![Image20](https://github.com/user-attachments/assets/45dd4b2f-14c4-46c0-ba42-4e267987631d)
+
+3. **Verify the Deployment:**
+    - Check Kubernetes using **`kubectl`** commands to confirm the application update.
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+- ![Image21](https://github.com/user-attachments/assets/7bba7942-e922-477e-bf44-eb8b19a18a39)
 
 
 
